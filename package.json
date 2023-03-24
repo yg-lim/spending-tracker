@@ -1,0 +1,30 @@
+{
+  "name": "spending-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yg-lim/spending-tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yg-lim/spending-tracker/issues"
+  },
+  "homepage": "https://github.com/yg-lim/spending-tracker#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "pug": "^3.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.36.0",
+    "nodemon": "^2.0.22"
+  }
+}
