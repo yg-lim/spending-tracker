@@ -15,7 +15,16 @@ app.use(morgan("common"));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
-  res.send("hello world");
+  let today = new Date();
+  let yearMonth = `${today.getFullYear()}/${today.getMonth() + 1}`;
+
+  res.redirect(yearMonth);
+});
+
+app.get("/:year/:month", (req, res) => {
+  res.render("expenses", {
+    expenses: account.expensesNewToOld(),
+  });
 });
 
 app.listen(PORT, HOST, () => {
