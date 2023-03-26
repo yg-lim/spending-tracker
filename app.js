@@ -1,9 +1,12 @@
 const express = require("express");
 const morgan = require("morgan");
+const Expense = require("./lib/expense");
+const Account = require("./lib/account");
 
 const app = express();
 const PORT = 3000;
 const HOST = "localhost";
+const account = require("./lib/seed-data");
 
 app.set("view engine", "pug");
 app.set("views", "./views");
