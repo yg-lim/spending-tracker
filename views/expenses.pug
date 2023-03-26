@@ -7,12 +7,12 @@ html(lang="en")
   body
     header
       div(class="flex space-between")
-        a(href="/feb2023") Prev
-        h2(class="text-center") Mar 2023
-        a(href="/apr2023") Next
+        a(href=`${month - 1}`) Prev
+        h2(class="text-center") #{monthToString} #{year}
+        a(href=`${month + 1}`) Next
       div
         p(class="subhead gray text-center") Total Spending
-        h1(class="text-center") $709.50
+        h1(class="text-center")= total
     main
       section(class="form-section")
         form(action="/expenses" method="POST" class="new-expense-form") 
