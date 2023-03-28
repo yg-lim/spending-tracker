@@ -1,0 +1,49 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    title Spending Tracker
+    link(rel="stylesheet", href="/stylesheets/application.css")
+  body
+    header
+      div(class="flex space-between")
+        a(href=`../${prevMonthPath(year, month)}`) Prev
+        h2(class="text-center") #{monthToString(month)} #{year}
+        a(href=`../${nextMonthPath(year, month)}` class=isCurrentMonth(year, month) ? "hidden" : "") Next
+      div
+        p(class="subhead gray text-center") Total Spending
+        h1(class="text-center")= total
+    main
+      section(class="form-section")
+        form(action="/expenses" method="POST" class="new-expense-form") 
+          fieldset(class="new-expense-text-inputs")
+            dl
+              dt
+                label(for="description" class="body-2") Description of Expense
+              dd
+                input(type="text" name="description" id="description")
+            div(class="flex")
+              dl(class="margin-right")
+                dt
+                  label(for="amount" class="body-2") Amount
+                dd
+                  input(type="number" name="amount" id="amount")
+              dl(class="margin-left")
+                dt
+                  label(for="date" class="body-2") Date (YYYY-MM-DD)
+                dd
+                  input(type="text" name="date" id="date" value=`${year}-${month.padStart(2, "0")}-${date.padStart(2, "0")}`)
+          fieldset(class="new-expense-controls")
+            button(class="cta") Add Expense
+      section(class="expenses-section")
+        h3(class="border-bottom") Expenses
+        ul
+          each expense in expenses
+            li(class="flex space-between padding-vertical align-center border-bottom")
+              div(class="flex align-center")
+                p(class="body-2 text-center gray margin-right medium") #{expense.getDay()}<br>#{expense.getDate()}
+                p(class="body-1")= expense.description
+              div(class="flex align-baseline")
+                p(class="body-1 medium text-right")= expense.getAmount()
+                a(href=`/${expense.id}/edit` class="text-right margin-left small-link") Edit
+
