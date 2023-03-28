@@ -100,7 +100,6 @@ app.get("/:year/:month", (req, res, next) => {
   if (!validDate(year, month)) next(new Error("Invalid date!"));
 
   let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
-  console.log(expenses);
   res.render("expenses", {
     expenses: expensesNewToOld(expenses),
     total: `$${expenses.reduce((acc, val) => acc + val.amount, 0).toFixed(2)}`,
