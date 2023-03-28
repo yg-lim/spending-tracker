@@ -14,6 +14,12 @@ html(lang="en")
         p(class="subhead gray text-center") Total Spending
         h1(class="text-center")= total
     main
+      - let kinds = Object.keys(flash || {});
+        if kinds.length > 0
+          ul(class="flash")
+            each kind in kinds
+              each message in flash[kind]
+                li(class=kind)= message
       section(class="form-section")
         form(action="/expenses" method="POST" class="new-expense-form") 
           fieldset(class="new-expense-text-inputs")
@@ -27,7 +33,7 @@ html(lang="en")
                 dt
                   label(for="amount" class="body-2") Amount
                 dd
-                  input(type="number" name="amount" id="amount")
+                  input(type="number" name="amount" id="amount" min="0.01" step="0.01")
               dl(class="margin-left")
                 dt
                   label(for="date" class="body-2") Date (YYYY-MM-DD)
@@ -37,13 +43,16 @@ html(lang="en")
             button(class="cta") Add Expense
       section(class="expenses-section")
         h3(class="border-bottom") Expenses
-        ul
-          each expense in expenses
-            li(class="flex space-between padding-vertical align-center border-bottom")
-              div(class="flex align-center")
-                p(class="body-2 text-center gray margin-right medium") #{expense.getDay()}<br>#{expense.getDate()}
-                p(class="body-1")= expense.description
-              div(class="flex align-baseline")
-                p(class="body-1 medium text-right")= expense.getAmount()
-                a(href=`/${expense.id}/edit` class="text-right margin-left small-link") Edit
+        if expenses.length === 0
+          p(class="body-2 padding-vertical") No expenses for this month.
+        else
+          ul
+            each expense in expenses
+              li(class="flex space-between padding-vertical align-center border-bottom")
+                div(class="flex align-center")
+                  p(class="body-2 text-center gray margin-right medium") #{expense.getDay()}<br>#{expense.getDate()}
+                  p(class="body-1")= expense.description
+                div(class="flex align-baseline")
+                  p(class="body-1 medium text-right")= expense.getAmount()
+                  a(href=`/${expense.id}/edit` class="text-right margin-left small-link") Edit
 
