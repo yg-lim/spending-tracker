@@ -7,9 +7,9 @@ html(lang="en")
   body
     header
       div(class="flex space-between")
-        a(href=`${month - 1}`) Prev
-        h2(class="text-center") #{monthToString} #{year}
-        a(href=`${month + 1}`) Next
+        a(href=`../${prevMonthPath(year, month)}`) Prev
+        h2(class="text-center") #{monthToString(month)} #{year}
+        a(href=`../${nextMonthPath(year, month)}` class=isCurrentMonth(year, month) ? "hidden" : "") Next
       div
         p(class="subhead gray text-center") Total Spending
         h1(class="text-center")= total
@@ -32,7 +32,7 @@ html(lang="en")
                 dt
                   label(for="date" class="body-2") Date (YYYY-MM-DD)
                 dd
-                  input(type="text" name="date" id="date")
+                  input(type="text" name="date" id="date" value=`${year}-${month.padStart(2, "0")}-${date.padStart(2, "0")}`)
           fieldset(class="new-expense-controls")
             button(class="cta") Add Expense
       section(class="expenses-section")

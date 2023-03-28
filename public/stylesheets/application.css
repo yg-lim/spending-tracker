@@ -151,3 +151,7 @@ h3 {
   font-size: 0.8rem;
   font-weight: 400;
 }
+
+.hidden {
+  visibility: hidden;
+}
