@@ -11,7 +11,6 @@ const app = express();
 const PORT = 3000;
 const HOST = "localhost";
 const LokiStore = store(session);
-const list = require("./lib/seed-data");
 const expensesNewToOld = require("./lib/expenses-new-to-old");
 const monthToString = require("./lib/month");
 
@@ -22,15 +21,38 @@ app.use(morgan("common"));
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
 app.use(session({
+  cookie: {
+    httpOnly: true,
+    maxAge: 31 * 24 * 60 * 60 * 1000,
+    path: "/",
+    secure: false,
+  },
   name: "spending-tracker-session-id",
   secret: "not-very-secure",
   resave: false,
   saveUninitialized: true,
+  store: new LokiStore({}),
 }))
 app.use(flash());
 app.use((req, res, next) => {
   res.locals.flash = req.session.flash;
   delete req.session.flash;
+  next();
+});
+app.use((req, res, next) => {
+  let expenseList = [];
+
+  if ("expenseList" in req.session) {
+    req.session.expenseList.expenses.forEach(rawExpense => {
+      let expense = Expense.recoverExpense(rawExpense);
+      expense.date = new Date(expense.date);
+      expenseList.push(expense);
+    });
+  }
+  
+  req.session.expenseList = new ExpenseList();
+  Object.assign(req.session.expenseList.expenses, expenseList);
+
   next();
 });
 
@@ -129,7 +151,7 @@ app.get("/", (req, res) => {
 app.get("/edit/:expenseId", (req, res, next) => {
   let expenseId = +req.params.expenseId;
 
-  let expense = list.findExpenseById(expenseId);
+  let expense = req.session.expenseList.findExpenseById(expenseId);
   if (!expense) next(new Error("Expense not found."));
 
   res.render("edit", { expense });
@@ -140,7 +162,7 @@ app.post("/edit/:expenseId",
   expenseValidation,
   (req, res, next) => {
     let expenseId = +req.params.expenseId;
-    let expense = list.findExpenseById(expenseId);
+    let expense = req.session.expenseList.findExpenseById(expenseId);
 
     if (!expense) next(new Error("Expense not found."));
 
@@ -169,12 +191,12 @@ app.post("/edit/:expenseId",
 
 app.post("/delete/:expenseId", (req, res, next) => {
   let expenseId = +req.params.expenseId;
-  let expense = list.findExpenseById(expenseId);
+  let expense = req.session.expenseList.findExpenseById(expenseId);
 
   if (!expense) {
     next(new Error("Expense not found."));
   } else {
-    list.deleteExpenseAtId(expenseId);
+    req.session.expenseList.deleteExpenseAtId(expenseId);
     req.flash("success", "Expense has been deleted.");
 
     let date = expense.date;
@@ -193,7 +215,7 @@ app.get("/:year/:month", (req, res, next) => {
   else {
     Object.assign(res.locals, { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth });
 
-    let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
+    let expenses = req.session.expenseList.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
 
     res.render("expenses", {
       expenses: expensesNewToOld(expenses),
@@ -220,7 +242,7 @@ app.post("/expenses",
       errors.array().forEach(error => req.flash("error", error.msg));
     } else {
       let expense = new Expense(req.body.description, Number(req.body.amount), req.body.date);
-      list.addExpense(expense);
+      req.session.expenseList.addExpense(expense);
       req.flash("success", "New expense has been added!");
     }
     res.redirect(`${year}/${month}`);
