@@ -38,7 +38,7 @@ html(lang="en")
                 dt
                   label(for="date" class="body-2") Date (YYYY-MM-DD)
                 dd
-                  input(type="text" name="date" id="date" value=`${year}-${month.padStart(2, "0")}-${date.padStart(2, "0")}`)
+                  input(type="date" name="date" id="date" value=`${year}-${month.padStart(2, "0")}-${date.padStart(2, "0")}`)
           fieldset(class="new-expense-controls")
             button(class="cta") Add Expense
       section(class="expenses-section")

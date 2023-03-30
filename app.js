@@ -98,6 +98,9 @@ app.get("/:year/:month", (req, res, next) => {
   let month = req.params.month.padStart(2, "0");
 
   if (!validDate(year, month)) next(new Error("Invalid date!"));
+  
+  Object.assign(res.locals, { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth });
+  console.log(year, month, String(new Date().getDate()));
 
   let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
   res.render("expenses", {
