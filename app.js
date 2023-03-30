@@ -73,17 +73,51 @@ const isCurrentMonth = (year, month) => {
   return todayDate.getTime() === comparedDate.getTime();
 };
 
-const validDate = (year, month) => {
+const validMonth = (year, month) => {
+  let date = new Date(year, month);
+  if (date.toString() === "Invalid Date") return false;
+
   let today = new Date();
-  let currentYear = today.getFullYear();
-  let currentMonth = today.getMonth();
+  let todaysMonth = +today.getMonth() + 1;
+  let todaysYear = +today.getFullYear();
 
-  let thisMonth = new Date(currentYear, currentMonth);
-  let comparedMonth = new Date(year, +month - 1);
+  let comparedMonth = +date.getMonth();
+  let comparedYear = +date.getFullYear();
 
-  return comparedMonth.toString() !== "Invalid Date" &&
-    comparedMonth.getTime() <= thisMonth.getTime();
+  return (comparedMonth <= todaysMonth) && (comparedYear <= todaysYear);
 } ;
+
+const expenseValidation = [
+  body("description")
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("Description of expense is required.")
+    .bail()
+    .isLength({ max: 25 })
+    .withMessage("Number of characters for description must be 25 or less."),
+  body("amount")
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("Amount is required.")
+    .bail()
+    .isCurrency()
+    .withMessage("Must be valid dollar amount in 00.00 format!"),
+  body("date")
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("Date is required.")
+    .bail()
+    .isDate({ format: "YYYY-MM-DD", strictMode: true })
+    .withMessage("Date must be in valid YYYY-MM-DD format")
+    .bail()
+    .custom(value => {
+      let date = new Date(value);
+      let today = new Date();
+
+      return date.toString() !== "Invalid Date" && date.getTime() <= today.getTime();
+    })
+    .withMessage("Must enter valid date that is either from today or prior.")
+];
 
 app.get("/", (req, res) => {
   let today = new Date();
@@ -96,60 +130,89 @@ app.get("/edit/:expenseId", (req, res, next) => {
   let expenseId = +req.params.expenseId;
 
   let expense = list.findExpenseById(expenseId);
-  if (!expense) next(new Error("Expense not found"));
+  if (!expense) next(new Error("Expense not found."));
 
   res.render("edit", { expense });
+});
+
+// submit edit to expense
+app.post("/edit/:expenseId",
+  expenseValidation,
+  (req, res, next) => {
+    let expenseId = +req.params.expenseId;
+    let expense = list.findExpenseById(expenseId);
+
+    if (!expense) next(new Error("Expense not found."));
+
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      errors.array().forEach(error => req.flash("error", error.msg));
+      res.render("edit", { expense, flash: req.flash() });
+    } else {
+      let description = req.body.description;
+      let amount = Number(req.body.amount);
+      let date = req.body.date;
+
+      expense.changeDesc(description);
+      expense.changeAmount(amount);
+      expense.changeDate(date);
+      req.flash("success", "Expense details have been updated.");
+
+      let fullDate = date.split("-");
+      let year = fullDate[0];
+      let month = fullDate[1];
+    
+      res.redirect(`/${year}/${month}`);
+    }
+  }
+);
+
+app.post("/delete/:expenseId", (req, res, next) => {
+  let expenseId = +req.params.expenseId;
+  let expense = list.findExpenseById(expenseId);
+
+  if (!expense) {
+    next(new Error("Expense not found."));
+  } else {
+    list.deleteExpenseAtId(expenseId);
+    req.flash("success", "Expense has been deleted.");
+
+    let date = expense.date;
+    let year = date.getFullYear();
+    let month = +date.getMonth() + 1;
+
+    res.redirect(`/${year}/${String(month).padStart(2, "0")}`);
+  }
 });
 
 app.get("/:year/:month", (req, res, next) => {
   let year = req.params.year;
   let month = req.params.month.padStart(2, "0");
 
-  if (!validDate(year, month)) next(new Error("Invalid date!"));
-  
-  Object.assign(res.locals, { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth });
+  if (!validMonth(year, month)) next(new Error("Invalid date!"));
+  else {
+    Object.assign(res.locals, { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth });
 
-  let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
+    let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
 
-  res.render("expenses", {
-    expenses: expensesNewToOld(expenses),
-    total: `$${expenses.reduce((acc, val) => acc + val.amount, 0).toFixed(2)}`,
-    date: String(new Date().getDate()),
-    month: month,
-    year: year,
-  });
+    res.render("expenses", {
+      expenses: expensesNewToOld(expenses),
+      total: `$${expenses.reduce((acc, val) => acc + val.amount, 0).toFixed(2)}`,
+      date: String(new Date().getDate()),
+      month: month,
+      year: year,
+    });
+  }
 });
 
 app.post("/expenses",
-  [
-    body("description")
-      .trim()
-      .isLength({ min: 1 })
-      .withMessage("Description of expense is required.")
-      .bail()
-      .isLength({ max: 25 })
-      .withMessage("Number of characters for description must be 25 or less."),
-    body("amount")
-      .trim()
-      .isLength({ min: 1 })
-      .withMessage("Amount is required.")
-      .bail()
-      .isCurrency()
-      .withMessage("Must be valid dollar amount in 00.00 format!"),
-    body("date")
-      .trim()
-      .isLength({ min: 1 })
-      .withMessage("Date is required.")
-      .bail()
-      .isDate({ format: "YYYY-MM-DD", strictMode: true })
-      .withMessage("Date must be in valid YYYY-MM-DD format")   
-  ],
+  expenseValidation,
   (req, res, next) => {
     let date = req.body.date.split("-");
     let year = date[0];
     let month = date[1];
 
-    if (!validDate(year, month)) next(new Error("Invalid date!"));
+    if (!validMonth(year, month)) next(new Error("Invalid date!"));
 
     let errors = validationResult(req);
 
