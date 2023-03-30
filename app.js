@@ -100,13 +100,12 @@ const validMonth = (year, month) => {
   if (date.toString() === "Invalid Date") return false;
 
   let today = new Date();
-  let todaysMonth = +today.getMonth() + 1;
   let todaysYear = +today.getFullYear();
+  let todaysMonth = +today.getMonth() + 1;
 
-  let comparedMonth = +date.getMonth();
-  let comparedYear = +date.getFullYear();
+  let thisMonth = new Date(todaysYear, todaysMonth);
 
-  return (comparedMonth <= todaysMonth) && (comparedYear <= todaysYear);
+  return date.getTime() <= thisMonth.getTime();
 } ;
 
 const expenseValidation = [
