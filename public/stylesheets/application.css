@@ -71,7 +71,7 @@ main {
   max-width: 373px;
 }
 
-.new-expense-form input {
+input {
   box-sizing: border-box;
   width: 100%;
   padding: 0.5rem;
@@ -154,4 +154,20 @@ h3 {
 
 .hidden {
   visibility: hidden;
+}
+
+.flash li {
+  padding: 1rem;
+  margin: 1rem 0;
+  font-weight: 500;
+}
+
+.success {
+  color: green;
+  background-color: lightgreen;
+}
+
+.error {
+  color: darkred;
+  background-color: lightcoral;
 }

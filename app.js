@@ -2,10 +2,15 @@ const express = require("express");
 const morgan = require("morgan");
 const Expense = require("./lib/expense");
 const ExpenseList = require("./lib/expense-list");
+const { body, validationResult } = require("express-validator");
+const session = require("express-session");
+const flash = require("express-flash");
+const store = require("connect-loki");
 
 const app = express();
 const PORT = 3000;
 const HOST = "localhost";
+const LokiStore = store(session);
 const list = require("./lib/seed-data");
 const expensesNewToOld = require("./lib/expenses-new-to-old");
 const monthToString = require("./lib/month");
@@ -16,6 +21,18 @@ app.set("views", "./views");
 app.use(morgan("common"));
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
+app.use(session({
+  name: "spending-tracker-session-id",
+  secret: "not-very-secure",
+  resave: false,
+  saveUninitialized: true,
+}))
+app.use(flash());
+app.use((req, res, next) => {
+  res.locals.flash = req.session.flash;
+  delete req.session.flash;
+  next();
+});
 
 const prevMonthPath = (year, month) => {
   year = Number(year);
@@ -28,7 +45,7 @@ const prevMonthPath = (year, month) => {
     month -= 1;
   }
 
-  return `${String(year)}/${String(month)}`;
+  return `${String(year)}/${String(month).padStart(2, "0")}`;
 };
 
 const nextMonthPath = (year, month) => {
@@ -42,7 +59,7 @@ const nextMonthPath = (year, month) => {
     month += 1;
   }
 
-  return `${String(year)}/${String(month)}`;
+  return `${String(year)}/${String(month).padStart(2, "0")}`;
 };
 
 const isCurrentMonth = (year, month) => {
@@ -68,6 +85,8 @@ const validDate = (year, month) => {
     comparedMonth.getTime() <= thisMonth.getTime();
 } ;
 
+app.locals = { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth };
+
 app.get("/", (req, res) => {
   let today = new Date();
   let yearMonthPath = `${today.getFullYear()}/${Number(today.getMonth()) + 1}`;
@@ -76,13 +95,14 @@ app.get("/", (req, res) => {
 
 app.get("/:year/:month", (req, res, next) => {
   let year = req.params.year;
-  let month = req.params.month;
+  let month = req.params.month.padStart(2, "0");
 
   if (!validDate(year, month)) next(new Error("Invalid date!"));
+  
+  Object.assign(res.locals, { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth });
+  console.log(year, month, String(new Date().getDate()));
 
-  let expenses = list.getExpensesByYearMonth(year, String(+month - 1));
-
-  res.locals = { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth };
+  let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
   res.render("expenses", {
     expenses: expensesNewToOld(expenses),
     total: `$${expenses.reduce((acc, val) => acc + val.amount, 0).toFixed(2)}`,
@@ -92,13 +112,49 @@ app.get("/:year/:month", (req, res, next) => {
   });
 });
 
-app.post("/expenses", (req, res, next) => {
-  // import express-validator and express-flash
-  // validate inputs from form
-  // add new expense to relative place
-  // redirect should be to the month in which the expense was added into
-  // error handling middleware implementation
-});
+app.post("/expenses",
+  [
+    body("description")
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage("Description of expense is required.")
+      .bail()
+      .isLength({ max: 25 })
+      .withMessage("Number of characters for description must be 25 or less."),
+    body("amount")
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage("Amount is required.")
+      .bail()
+      .isCurrency()
+      .withMessage("Must be valid dollar amount in 00.00 format!"),
+    body("date")
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage("Date is required.")
+      .bail()
+      .isDate({ format: "YYYY-MM-DD", strictMode: true })
+      .withMessage("Date must be in valid YYYY-MM-DD format")   
+  ],
+  (req, res, next) => {
+    let date = req.body.date.split("-");
+    let year = date[0];
+    let month = date[1];
+
+    if (!validDate(year, month)) next(new Error("Invalid date!"));
+
+    let errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      errors.array().forEach(error => req.flash("error", error.msg));
+    } else {
+      let expense = new Expense(req.body.description, Number(req.body.amount), req.body.date);
+      list.addExpense(expense);
+      req.flash("success", "New expense has been added!");
+    }
+    res.redirect(`${year}/${month}`);
+  }
+);
 
 app.use((err, req, res, _next) => {
   console.log(err);
