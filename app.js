@@ -85,12 +85,20 @@ const validDate = (year, month) => {
     comparedMonth.getTime() <= thisMonth.getTime();
 } ;
 
-app.locals = { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth };
-
 app.get("/", (req, res) => {
   let today = new Date();
-  let yearMonthPath = `${today.getFullYear()}/${Number(today.getMonth()) + 1}`;
+  let yearMonthPath = `${today.getFullYear()}/${String(Number(today.getMonth()) + 1).padStart(2, "0")}`;
   res.redirect(yearMonthPath);
+});
+
+// edit individual expense page
+app.get("/edit/:expenseId", (req, res, next) => {
+  let expenseId = +req.params.expenseId;
+
+  let expense = list.findExpenseById(expenseId);
+  if (!expense) next(new Error("Expense not found"));
+
+  res.render("edit", { expense });
 });
 
 app.get("/:year/:month", (req, res, next) => {
@@ -100,9 +108,9 @@ app.get("/:year/:month", (req, res, next) => {
   if (!validDate(year, month)) next(new Error("Invalid date!"));
   
   Object.assign(res.locals, { monthToString, prevMonthPath, nextMonthPath, isCurrentMonth });
-  console.log(year, month, String(new Date().getDate()));
 
   let expenses = list.getExpensesByYearMonth(year, String(+month - 1).padStart(2, "0"));
+
   res.render("expenses", {
     expenses: expensesNewToOld(expenses),
     total: `$${expenses.reduce((acc, val) => acc + val.amount, 0).toFixed(2)}`,
