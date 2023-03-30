@@ -113,6 +113,12 @@ button {
   color: white;
 }
 
+.destructive {
+  border: none;
+  background-color: red;
+  color: white;
+}
+
 .body-2 {
   font-size: 0.9rem;
 }
@@ -139,6 +145,10 @@ h3 {
   align-items: center;
 }
 
+.align-end {
+  align-items: flex-end;
+}
+
 .medium {
   font-weight: 500;
 }
@@ -150,6 +160,15 @@ h3 {
 .small-link {
   font-size: 0.8rem;
   font-weight: 400;
+}
+
+.edit-expense-form {
+  max-width: 373px;
+  margin: 3rem auto;
+}
+
+.edit-expense-controls a {
+  border: none;
 }
 
 .hidden {
